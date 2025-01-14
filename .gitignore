@@ -128,3 +128,9 @@ dmypy.json
 read/
 
 data/
+
+*.csv
+
+*.tsv
+
+*.rds
