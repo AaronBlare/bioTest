@@ -5,8 +5,9 @@ rm(list = ls())
 setwd("D:/bioTest/r/episcore")
 
 ## Start to Process Files 
-data=read.csv("data_GSE87571.csv", row.names='cpg')
-sexageinfo=read.csv("age_sex_GSE87571.csv")
+data=read.csv("data_Les.csv", row.names='cpg')
+sexageinfo=read.csv("age_sex_Les.csv")
+sexageinfo$ID = paste0('X', sexageinfo$ID)
 
 message("1. Loading data") 
 
