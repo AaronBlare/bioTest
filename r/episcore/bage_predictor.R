@@ -7,25 +7,26 @@
 library(tidyverse)
 library(survival)
 
+setwd("D:/bioTest/r/episcore/data")
 
 ###### (0) User input
 #########################################################################################################
 #########################################################################################################
 
-methylationTable <- "" # Path to methylation table. Each column corresponds to an individual. Each row corresponds to CpG. First column is the CpG name. If RDS, assumed first column is rownames. 
-methylationTable_format <- "" # rds, tsv, or csv
+methylationTable <- "data_GSE87571.csv" # Path to methylation table. Each column corresponds to an individual. Each row corresponds to CpG. First column is the CpG name. If RDS, assumed first column is rownames. 
+methylationTable_format <- "csv" # rds, tsv, or csv
 
-phenotypeTable <- "" # Path to phenotype table. Each column corresponds to a variable. Each row corresponds to an individual/sample. First column is sample name. If RDS, assumed first column is rownames. 
-phenotypeTable_format <- "" # rds, tsv, or csv
+phenotypeTable <- "age_sex_GSE87571.csv" # Path to phenotype table. Each column corresponds to a variable. Each row corresponds to an individual/sample. First column is sample name. If RDS, assumed first column is rownames. 
+phenotypeTable_format <- "csv" # rds, tsv, or csv
 
-grimageTable <- "" # Path to GrimAge results table. Each column represents a GrimAge component. Each row corresponds to an individual/sample. First column is sample name.
-grimageTable_format <- "" # rds, tsv, or csv
+grimageTable <- "grim_GSE87571.csv" # Path to GrimAge results table. Each column represents a GrimAge component. Each row corresponds to an individual/sample. First column is sample name.
+grimageTable_format <- "csv" # rds, tsv, or csv
 
 # Insert column names for each of the variables corresponding to the names in phenotypeTable
-ageColname <- "" # Age in years
-sexColname <- "" # Sex variable is binary, 1 = females, 0 = males
-tteColname <- "" # Time to event (death) column
-deathColname <- "" # Death variable is binary, 1 = dead, 0 = alive
+ageColname <- "Age" # Age in years
+sexColname <- "Sex" # Sex variable is binary, 1 = females, 0 = males
+tteColname <- "TTE" # Time to event (death) column
+deathColname <- "Death" # Death variable is binary, 1 = dead, 0 = alive
 
 
 ###### (1) Data loading
@@ -36,10 +37,10 @@ message("1. Loading data")
 message("1.1 Loading methylation data - rows to be CpGs and columns to be individuals") 
 
 ## Loading in model coefficients. Make sure these files are present in the current working directory or change the paths to the correct directory.
-coefficients <- read.delim("data/bage_coefficients.tsv")
+coefficients <- read.delim("bage_coefficients.tsv")
 
 ## Loading in CpG coefficients for episcore projection
-cpgs <- read.delim("data/cpg_episcore_weights.tsv")
+cpgs <- read.delim("cpg_episcore_weights.tsv")
 
 ## Loading methylation data
 if (tolower(methylationTable_format) == "rds") {
@@ -67,9 +68,9 @@ if (tolower(phenotypeTable_format) == "rds") {
 if (tolower(grimageTable_format) == "rds") {
   grim <- readRDS(grimageTable)
 } else if (tolower(grimageTable_format) == "tsv") {
-  grim <- read.delim(grimageTable, sep = "\t", row.names = 2)
+  grim <- read.delim(grimageTable, sep = "\t", row.names = 1)
 } else if (tolower(grimageTable_format) == "csv") {
-  grim <- read.csv(grimageTable, sep = ",", row.names = 2)
+  grim <- read.csv(grimageTable, sep = ",", row.names = 1)
 } else {
   message("Unrecognized GrimAge data format. Accepted formats: rds, tsv, and csv.")
 }
@@ -189,7 +190,7 @@ for(i in loop){
 
 ## Save file
 message("3.1. Exporting Episcores")  
-write.table(out, "episcore_projections.tsv", sep = "\t", quote = FALSE)
+write.table(out, "episcore_projections.tsv", sep = "\t", quote = FALSE, col.names=NA)
 
 
 ###### (4) Scale GrimAge components
@@ -261,13 +262,13 @@ pred_pp_scaled <- scale_pred(pred_pp, mean_pred, sd_pred, mean_test, sd_test)
 
 ## Make df with everything
 # pred_df <- data.frame(pred_pp_Z, pred_pp_scaled, grim_pred, pheno[samples, c("Age", "Sex", "TTE", "Dead")])
-pred_df <- data.frame(pred_pp_Z, grim_pred, pheno[samples, c("Age", "Sex", "TTE", "Dead")])
+pred_df <- data.frame(pred_pp_Z, pred_pp_scaled, grim_pred, pheno[samples, c("Age", "Sex", "TTE", "Dead")])
 names(pred_df) <- c("bAge", "bAge_Years", "GrimAge", "Age", "Sex", "TTE", "Dead")
 
 ## Obtain bAgeAccel and GrimAgeAccel
 message("5.3. Obtaining bAgeAccel") 
 pred_df$GrimAgeAccel <- resid(lm(GrimAge ~ Age, data=pred_df, na.action=na.exclude))
-pred_df$bAgeAccel <- resid(lm(bAge ~ Age, data=pred_df, na.action=na.exclude))
+pred_df$bAgeAccel <- resid(lm(bAge ~ Age, data=pred_df, na.action=na.exclude)) 
 
 ## Export
 message("5.4. Exporting predictions") 
