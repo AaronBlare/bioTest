@@ -5,6 +5,8 @@ rm(list=ls())
 ###############################################
 if (!requireNamespace("BiocManager", quietly=TRUE))
   install.packages("BiocManager")
+install.packages("devtools")
+devtools::install_url("https://cran.r-project.org/src/contrib/Archive/kpmt/kpmt_0.1.0.tar.gz")
 BiocManager::install("ChAMP")
 library("ChAMP")
 
@@ -48,13 +50,14 @@ myLoad_450 <- champ.load(
   filterXY = FALSE,
   force = TRUE
 )
-pd_450 <-  as.data.frame(myLoad_450$pd)
+pd_450 <- as.data.frame(myLoad_450$pd)
 
 ###############################################
 # Functional normalization
 ###############################################
 betas_450 <- getBeta(preprocessFunnorm(myLoad_450$rgSet))
 
+###############################################
 path_work <- path_data_EPIC
 setwd(path_work)
 
@@ -85,3 +88,6 @@ pd_EPIC <-  as.data.frame(myLoad_EPIC$pd)
 # Functional normalization
 ###############################################
 betas_EPIC <- getBeta(preprocessFunnorm(myLoad_EPIC$rgSet))
+
+betas_450k_to_epic = mLiftOver(betas_450, "EPIC", impute=FALSE)
+length(betas_450k_to_epic)
