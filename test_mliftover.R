@@ -115,7 +115,7 @@ max(betas_450k_to_epic_filtered)
 min(betas_450k_to_epic_filtered)
 write.csv(betas_450k_to_epic, file = "betas_450k_to_epic.csv")
 
-betas_450k_to_msa <- mLiftOver(betas_450_1, "MSA", impute=FALSE) # MSA has no option to be imputed, see sesameDataList()
+betas_450k_to_msa <- mLiftOver(betas_450, "MSA", impute=FALSE) # MSA has no option to be imputed, see sesameDataList()
 betas_450k_to_msa_filtered <- betas_450k_to_msa[rowSums(!is.na(betas_450k_to_msa))>0,]
 max(betas_450k_to_msa_filtered)
 min(betas_450k_to_msa_filtered)
