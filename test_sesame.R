@@ -14,6 +14,8 @@ setwd(path_data)
 
 betas <- openSesame(path_data, prep="QCDPB", collapseToPfx = TRUE)
 betas_full <- do.call(cbind, lapply(searchIDATprefixes(path_data), function(pfx) {getBetas(noob(pOOBAH(dyeBiasNL(inferInfiniumIChannel(qualityMask(readIDATpair(pfx)))))))}))
+betas_non_masked <- do.call(cbind, lapply(searchIDATprefixes(path_data), function(pfx) {getBetas(noob(pOOBAH(dyeBiasNL(inferInfiniumIChannel(qualityMask(readIDATpair(pfx)))))), mask=FALSE)}))
+
 write.csv(betas, file = "betas.csv")
 
 # Check how many CpGs were NaN
@@ -23,10 +25,15 @@ rows_with_all_nan_subset <- betas[rows_with_all_nan, ]
 rows_with_all_nan_full <- apply(betas_full, 1, function(x) all(is.na(x)))
 rows_with_all_nan_subset_full <- betas_full[rows_with_all_nan_full, ]
 
+rows_with_all_nan_non_masked <- apply(betas_non_masked, 1, function(x) all(is.na(x)))
+rows_with_all_nan_subset_non_masked <- betas_non_masked[rows_with_all_nan_non_masked, ]
+
 # Select only non-NaN CpGs
 betas_filtered <- betas[rowSums(!is.nan(betas))>0,]
 
 betas_filtered_full <- betas_full[rowSums(!is.na(betas_full))>0,]
+
+betas_filtered_non_masked <- betas_non_masked[rowSums(!is.na(betas_non_masked))>0,]
 
 # Check number of dropped CpGs on each step
 betas_step_1 <- do.call(cbind, lapply(searchIDATprefixes(path_data), function(pfx) {getBetas(qualityMask(readIDATpair(pfx)))}))
