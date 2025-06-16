@@ -5,8 +5,8 @@ rm(list = ls())
 setwd("D:/bioTest/r/episcore")
 
 ## Start to Process Files 
-data=read.csv("data_Les.csv", row.names='cpg')
-sexageinfo=read.csv("age_sex_Les.csv")
+data=read.csv("data_Les_63_swan.csv", row.names='cpg')
+sexageinfo=read.csv("age_sex_Les_63_swan.csv")
 sexageinfo$ID = paste0('X', sexageinfo$ID)
 
 message("1. Loading data") 
@@ -219,7 +219,7 @@ NULL
   message("5. Covariates")
 }
 
-write.csv(out, "out.csv", row.names = F)
+write.csv(out, "episcores_Les_63_swan.csv", row.names = F)
 
 ## Save File and Finish Up 
 message("Analysis Finished! Thank you for using our application. Output File is called \"out\"") 
