@@ -74,7 +74,10 @@ dmp <- champ.DMP(
   adjust.method = "BH",
   arraytype = "EPICv2"
 )
-write.csv(dmp$Control_to_Case, file = "DMP_orgn_champ.csv")
+dmp_short <- dmp$Control_to_Case[dmp$Control_to_Case$adj.P.Val<=0.05,]
+if (!all(is.na(dmp_short))) {
+  write.csv(dmp$Control_to_Case, file = "DMP_orgn_champ.csv")
+}
 
 cpgs_fltr <- read.csv("cpgs_fltd.csv")
 cpgs_fltr <- as.character(cpgs_fltr[,1])
@@ -87,7 +90,10 @@ dmp_fltr <- champ.DMP(
   adjust.method = "BH",
   arraytype = "EPICv2"
 )
-write.csv(dmp_fltr$Control_to_Case, file = "DMP_fltr_champ.csv")
+dmp_short_fltr <- dmp_fltr$Control_to_Case[dmp_fltr$Control_to_Case$adj.P.Val<=0.05,]
+if (!all(is.na(dmp_short_fltr))) {
+  write.csv(dmp_fltr$Control_to_Case, file = "DMP_fltr_champ.csv")
+}
 ####################################################################
 ### DMR function test
 ####################################################################
@@ -279,11 +285,12 @@ library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
 library(readxl)
 library(stringr)
 library(limma)
+library(missMethyl)
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63"
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/noob"
 setwd(path)
 
-pheno <- read_excel("pheno.xlsx")
+pheno <- read_excel("pheno_noob.xlsx")
 pheno <- as.data.frame(pheno)
 names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
 pheno$Special.Status <- as.factor(pheno$Special.Status)
@@ -291,7 +298,7 @@ colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
 rownames(pheno) <- pheno[,1]
 pheno <- pheno[,c("Age","Sex","Special.Status")]
 
-betas <- read.csv("betas.csv")
+betas <- read.csv("betas_noob.csv")
 rownames(betas) <- betas[,1]
 betas[,1] <- NULL
 colnames(betas) <- gsub("^X", "", colnames(betas))
@@ -343,7 +350,22 @@ loi.lv[["CpG"]] <- unique(unlist(sapply(RSanno[cpg.idx, "UCSC_RefGene_Name"], fu
 write.csv(data.frame(loi.lv$CpG), file = "GSEA(ebayes)_group_wo_age_genes_orgn_limma.csv", row.names=FALSE)
 }
 
-### Plotting
+### GSEA gometh
+cpgs_orgn <- read.csv("cpgs_orgn.csv")
+cpgs_orgn <- as.character(cpgs_orgn[,1])
+
+gsea_res_all <- gometh(
+  row.names(top_short),
+  all.cpg = cpgs_orgn,
+  collection = c("GO", "KEGG"),
+  array.type = "EPIC_V2")
+
+gsea_res_adj <- gsea_res_all[gsea_res_all$FDR<=0.05,]
+if (!all(is.na(gsea_res_adj))) {
+  write.csv(gsea_res_adj, file = "GSEA(gometh)_group_orgn.csv", row.names=TRUE)
+}
+
+### Plotting CpGs
 cpgs <- rownames(top)
 par(mfrow=c(2,2))
 for(i in 1:4){
@@ -354,3 +376,84 @@ for(i in 1:4){
   title(cpgs[i],cex.main=1.5)
 }
 
+####################################################################
+### GSEA testing for regions (DMRcate)
+####################################################################
+rm(list=ls())
+
+library("ChAMP")
+library("methylGSA")
+library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
+library(readxl)
+library(stringr)
+library(limma)
+library(DMRcate)
+
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63"
+setwd(path)
+
+pheno <- read_excel("pheno.xlsx")
+pheno <- as.data.frame(pheno)
+names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
+pheno$Special.Status <- as.factor(pheno$Special.Status)
+colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
+rownames(pheno) <- pheno[,1]
+pheno <- pheno[,c("Age","Sex","Special.Status")]
+
+betas <- read.csv("betas.csv")
+rownames(betas) <- betas[,1]
+betas[,1] <- NULL
+colnames(betas) <- gsub("^X", "", colnames(betas))
+
+group <- factor(pheno$Special.Status, levels=c("Control","Case"))
+age <- pheno$Age
+design <- model.matrix(~group)
+row.names(design) <- row.names(pheno)
+
+design_for_contrast <- model.matrix(~group+age)
+row.names(design_for_contrast) <- row.names(pheno)
+design_contrast <- makeContrasts(GroupWoAge=groupCase-age, levels=design_for_contrast)
+
+annotation_diff <- cpg.annotate(
+  datatype="array", 
+  object=data.matrix(betas), what="Beta", 
+  arraytype="EPICv2", 
+  analysis.type="differential",
+  design=design, 
+  contrasts=FALSE, cont.matrix=NULL, 
+  fdr=1, coef=2)
+diff_DMRs <- dmrcate(annotation_diff, lambda=1000, C=2)
+results.ranges.diff <- extractRanges(diff_DMRs)
+
+annotation_contrast_diff <- cpg.annotate(
+  datatype="array", 
+  object=betas, what="Beta", 
+  arraytype="EPICv2", 
+  analysis.type="differential",
+  design=design, 
+  contrasts=TRUE, cont.matrix=design_contrast, 
+  fdr=0.05) 
+
+annotation_var <- cpg.annotate(
+  datatype="array", 
+  object=betas, what="Beta", 
+  arraytype="EPICv2", 
+  analysis.type="variability", design, contrasts = FALSE, 
+             cont.matrix = NULL, fdr = 0.05, coef, varFitcoef=NULL, 
+             topVarcoef=NULL, ...) 
+
+annotation_ANOVA <- cpg.annotate(
+  datatype="array", 
+  object=betas, what="Beta", 
+  arraytype="EPICv2", 
+  analysis.type="ANOVA", design, contrasts = FALSE, 
+             cont.matrix = NULL, fdr = 0.05, coef, varFitcoef=NULL, 
+             topVarcoef=NULL, ...) 
+
+annotation_diff_var <- cpg.annotate(
+  datatype="array", 
+  object=betas, what="Beta", 
+  arraytype="EPICv2", 
+  analysis.type="diffVar", design, contrasts = FALSE, 
+             cont.matrix = NULL, fdr = 0.05, coef, varFitcoef=NULL, 
+             topVarcoef=NULL, ...) 
