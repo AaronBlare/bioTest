@@ -421,39 +421,93 @@ annotation_diff <- cpg.annotate(
   analysis.type="differential",
   design=design, 
   contrasts=FALSE, cont.matrix=NULL, 
-  fdr=1, coef=2)
+  fdr=0.05, coef=2)
 diff_DMRs <- dmrcate(annotation_diff, lambda=1000, C=2)
-results.ranges.diff <- extractRanges(diff_DMRs)
+if (diff_DMRs) {
+  results.ranges.diff <- extractRanges(diff_DMRs)
+  results.ranges.diff.sign <- results.ranges.diff[results.ranges.diff$HMFDR<=0.05,]
+  if (!all(is.na(results.ranges.diff.sign))) {
+    write.csv(results.ranges.diff.sign, file = "DMRcate_diff_group_orgn.csv", row.names=TRUE)
+  }
+}
 
 annotation_contrast_diff <- cpg.annotate(
   datatype="array", 
-  object=betas, what="Beta", 
+  object=data.matrix(betas), what="Beta", 
   arraytype="EPICv2", 
   analysis.type="differential",
-  design=design, 
+  design=design_for_contrast, 
   contrasts=TRUE, cont.matrix=design_contrast, 
-  fdr=0.05) 
+  fdr=0.05, coef=colnames(design_contrast)[1])
+diff_contrast_DMRs <- dmrcate(annotation_contrast_diff, lambda=1000, C=2)
+if (diff_contrast_DMRs) {
+  results.ranges.diff.contrast <- extractRanges(diff_contrast_DMRs)
+  results.ranges.diff.contrast.sign <- results.ranges.diff.contrast[results.ranges.diff.contrast$HMFDR<=0.05,]
+  if (!all(is.na(results.ranges.diff.contrast.sign))) {
+    write.csv(results.ranges.diff.contrast.sign, file = "DMRcate_diff_contrast_group_orgn.csv", row.names=TRUE)
+  }
+}
+
+### Visualization + GSEA
+
+cols <- c(2,4)[pheno$Special.Status]
+names(cols) <- pheno$Special.Status
+par(mfrow=c(1,1))
+DMR.plot(ranges=results.ranges.diff, dmr=2, CpGs=betas, phen.col=cols, 
+         what="Beta", arraytype="EPICv2", genome="hg38")
+
+gst.region <- goregion(results.ranges.diff, all.cpg=rownames(betas), 
+                       collection="GO", array.type="EPICv2", plot.bias=TRUE)
+
+gst.region.kegg <- goregion(results.ranges.diff, all.cpg=rownames(betas), 
+                       collection="KEGG", array.type="EPICv2")
+
+gsa.region <- gsaregion(results.ranges.diff, all.cpg=rownames(betas), 
+                        collection=hallmark)
+
+### Three next options (var, ANOVA, diffVar) don't work with EPICv2
 
 annotation_var <- cpg.annotate(
   datatype="array", 
-  object=betas, what="Beta", 
+  object=na.omit(data.matrix(betas)), what="Beta", 
   arraytype="EPICv2", 
-  analysis.type="variability", design, contrasts = FALSE, 
-             cont.matrix = NULL, fdr = 0.05, coef, varFitcoef=NULL, 
-             topVarcoef=NULL, ...) 
+  analysis.type="variability", na.rm=TRUE)
+var_DMRs <- dmrcate(annotation_var, lambda=1000, C=2)
+if (var_DMRs) {
+  results.ranges.var <- extractRanges(var_DMRs)
+  results.ranges.var.sign <- results.ranges.var[results.ranges.var$HMFDR<=0.05,]
+  if (!all(is.na(results.ranges.var.sign))) {
+    write.csv(results.ranges.var.sign, file = "DMRcate_var_group_orgn.csv", row.names=TRUE)
+  }
+}
 
 annotation_ANOVA <- cpg.annotate(
   datatype="array", 
-  object=betas, what="Beta", 
+  object=data.matrix(betas), what="Beta", 
   arraytype="EPICv2", 
-  analysis.type="ANOVA", design, contrasts = FALSE, 
-             cont.matrix = NULL, fdr = 0.05, coef, varFitcoef=NULL, 
-             topVarcoef=NULL, ...) 
+  analysis.type="ANOVA", design=design, 
+  fdr = 0.05) 
+anova_DMRs <- dmrcate(annotation_ANOVA, lambda=1000, C=2)
+if (diff_DMRs) {
+  results.ranges.anova <- extractRanges(anova_DMRs)
+  results.ranges.anova.sign <- results.ranges.anova[results.ranges.anova$HMFDR<=0.05,]
+  if (!all(is.na(results.ranges.anova.sign))) {
+    write.csv(results.ranges.anova.sign, file = "DMRcate_anova_group_orgn.csv", row.names=TRUE)
+  }
+}
 
 annotation_diff_var <- cpg.annotate(
   datatype="array", 
-  object=betas, what="Beta", 
+  object=na.omit(data.matrix(betas)), what="Beta", 
   arraytype="EPICv2", 
-  analysis.type="diffVar", design, contrasts = FALSE, 
-             cont.matrix = NULL, fdr = 0.05, coef, varFitcoef=NULL, 
-             topVarcoef=NULL, ...) 
+  analysis.type="diffVar", design=design, 
+  contrasts = FALSE, cont.matrix = NULL, 
+  fdr=0.05, varFitcoef=2) 
+diff_var_DMRs <- dmrcate(annotation_diff_var, lambda=1000, C=2)
+if (diff_var_DMRs) {
+  results.ranges.diff.var <- extractRanges(diff_var_DMRs)
+  results.ranges.diff.var.sign <- results.ranges.diff.var[results.ranges.diff.var$HMFDR<=0.05,]
+  if (!all(is.na(results.ranges.diff.var.sign))) {
+    write.csv(results.ranges.diff.var.sign, file = "DMRcate_diff_var_group_orgn.csv", row.names=TRUE)
+  }
+}
