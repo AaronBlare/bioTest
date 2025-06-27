@@ -16,6 +16,8 @@ install.packages("stringr")
 library(devtools)
 devtools::install_github("YuanTian1991/ChAMP")
 devtools::install_github("YuanTian1991/ChAMPData")
+devtools::install_github("perishky/meffil")
+devtools::install_github("ytwangZero/easyEWAS")
 
 library("ChAMP")
 library("methylGSA")
@@ -511,3 +513,138 @@ if (diff_var_DMRs) {
     write.csv(results.ranges.diff.var.sign, file = "DMRcate_diff_var_group_orgn.csv", row.names=TRUE)
   }
 }
+
+####################################################################
+### meffil testing
+####################################################################
+rm(list=ls())
+
+library(meffil)
+library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
+library(readxl)
+library(stringr)
+
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63"
+setwd(path)
+
+pheno <- read_excel("pheno.xlsx")
+pheno <- as.data.frame(pheno)
+names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
+pheno$Special.Status <- as.factor(pheno$Special.Status)
+colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
+rownames(pheno) <- pheno[,1]
+pheno <- pheno[,c("Age","Sex","Special.Status")]
+
+betas <- read.csv("betas.csv")
+rownames(betas) <- betas[,1]
+betas[,1] <- NULL
+colnames(betas) <- gsub("^X", "", colnames(betas))
+
+group <- pheno$Special.Status
+age <- data.frame(Age = pheno$Age)
+rownames(age) <- rownames(pheno)
+
+beta.nodup <- meffil.collapse.dups(data.matrix(betas))
+
+set.seed(1337)  
+ewas.ret <- meffil.ewas(beta.nodup, variable=pheno$Special.Status, covariates=NULL, isva=F) 
+
+ewas.parameters <- meffil.ewas.parameters(sig.threshold=0.05,  ## EWAS p-value threshold
+                                          max.plots=100, ## plot at most 100 CpG sites
+                                          qq.inflation.method="median",  ## measure inflation using median
+                                          model="sva") ## select default EWAS model; 
+
+ewas.summary<-meffil.ewas.summary(ewas.ret,beta.nodup,parameters=ewas.parameters)                              
+
+meffil.ewas.report(ewas.summary, output.file="meffil_ewas_report.html")
+
+set.seed(1337)
+ewas.ret.cont <- meffil.ewas(beta.nodup, variable=group, covariates=age, isva=F) 
+
+ewas.parameters <- meffil.ewas.parameters(sig.threshold=0.05,  ## EWAS p-value threshold
+                                          max.plots=100, ## plot at most 100 CpG sites
+                                          qq.inflation.method="median",  ## measure inflation using median
+                                          model="sva") ## select default EWAS model; 
+
+ewas.summary.cont<-meffil.ewas.summary(ewas.ret.cont,beta.nodup,parameters=ewas.parameters)                              
+
+meffil.ewas.report(ewas.summary.cont, output.file="meffil_cont_ewas_report.html")
+
+####################################################################
+### easyEWAS testing
+####################################################################
+rm(list=ls())
+
+library(easyEWAS)
+library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
+library(readxl)
+library(stringr)
+
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63"
+setwd(path)
+
+pheno <- read_excel("pheno.xlsx")
+pheno <- as.data.frame(pheno)
+names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
+pheno$Special.Status <- as.factor(pheno$Special.Status)
+colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
+rownames(pheno) <- pheno[,1]
+rownames(pheno) <- as.character(rownames(pheno))
+pheno[,1] <- as.character(pheno[,1])
+pheno <- pheno[,c("ID", "Age","Sex","Special.Status")]
+
+betas <- read.csv("betas.csv")
+rownames(betas) <- betas[,1]
+colnames(betas) <- gsub("^X", "", colnames(betas))
+colnames(betas) <- as.character(colnames(betas))
+
+# prepare the data file ------
+res <- initEWAS(outpath = path)
+res <- loadEWAS(input = res,
+                ExpoData = pheno,
+                MethyData = betas)
+
+res <- transEWAS(input = res, Vars = "Special.Status", TypeTo = "factor")
+                 
+# perform the EWAS analysis ------
+res <- startEWAS(input = res,
+                model = "lm",
+                expo = "Special.Status",
+                cov = "Age",
+                core = "default")
+
+# visualize the EWAS result ------
+res <- plotEWAS(input = res,
+                file = "jpg",
+                p = "PVAL_1",
+                threshold = 0.05)
+
+# internal validation based on the bootstrap method ------
+res <- bootEWAS(input = res,
+                filterP = "PVAL_1",
+                cutoff = 0.001,
+                bootCI = "perc",
+                times = 100)
+
+# conduct enrichment analysis ------
+res <- enrichEWAS(input = res,
+                  method = "KEGG",
+                  filterP = "PVAL_1",
+                  cutoff = 0.05,
+                  plot = TRUE,
+                  plotType = "dot",
+                  plotcolor = "pvalue",
+                  showCategory = 20)
+
+# DMR analysis -----
+res <- dmrEWAS(input = res,
+               chipType = "EPICV2",
+               what = "Beta",
+               expo = "Special.Status",
+               cov = "Age",
+               genome = "hg38",
+               lambda=1000,
+               C = 2,
+               filename = "default",
+               pcutoff = 0.05,
+               epicv2Filter = "mean")
