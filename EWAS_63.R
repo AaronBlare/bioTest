@@ -648,3 +648,52 @@ res <- dmrEWAS(input = res,
                filename = "default",
                pcutoff = 0.05,
                epicv2Filter = "mean")
+
+####################################################################
+### minfi testing
+####################################################################
+rm(list=ls())
+
+library(minfi)
+library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
+library(readxl)
+library(stringr)
+
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63"
+setwd(path)
+
+pheno <- read_excel("pheno.xlsx")
+pheno <- as.data.frame(pheno)
+names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
+pheno$Special.Status <- as.factor(pheno$Special.Status)
+colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
+rownames(pheno) <- pheno[,1]
+pheno <- pheno[,c("Age","Sex","Special.Status")]
+
+betas <- read.csv("betas.csv")
+rownames(betas) <- betas[,1]
+betas[,1] <- NULL
+colnames(betas) <- gsub("^X", "", colnames(betas))
+
+dmp <- dmpFinder(data.matrix(betas), pheno=pheno$Special.Status, type="continuous")
+dmp_short <- dmp[dmp$qval<=0.05,]
+if (!all(is.na(dmp_short))) {
+RSobject <- RatioSet(betas, annotation = c(array = "IlluminaHumanMethylationEPICv2", annotation = "20a1.hg38"))
+RSanno <- getAnnotation(RSobject)[, c("chr", "pos", "Name", "UCSC_RefGene_Name")]
+loi.lv <- list()
+cpg.idx <- unique(unlist(row.names(dmp_short)))
+loi.lv[["CpG"]] <- unique(unlist(sapply(RSanno[cpg.idx, "UCSC_RefGene_Name"], function(x) strsplit(x, split = ";")[[1]])))
+write.csv(data.frame(loi.lv$CpG), file = "DMP_group_genes_orgn_minfi.csv", row.names=FALSE)
+}
+
+group <- factor(pheno$Special.Status, levels=c("Control","Case"))
+age <- pheno$Age
+design <- model.matrix(~group)
+row.names(design) <- row.names(pheno)
+
+GRset <- makeGenomicRatioSetFromMatrix(data.matrix(betas), array="IlluminaHumanMethylationEPICv2", annotation="20a1.hg38", mergeManifest=TRUE, what="Beta")
+dmr <- bumphunter(GRset, design, coef=2, type="Beta", cutoff=0.05)
+
+if (!all(is.na(dmr$table))) {
+  write.csv(dmr$table, file = "DMR_orgn_minfi.csv", row.names=TRUE)
+}
