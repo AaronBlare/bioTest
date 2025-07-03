@@ -50,10 +50,10 @@ gsea_pval <- 0.05
 methylglm_minsize <- 10
 methylglm_maxsize <- 1000
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63"
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/noob"
 setwd(path)
 
-pheno <- read_excel("pheno.xlsx")
+pheno <- read_excel("pheno_noob.xlsx")
 pheno <- as.data.frame(pheno)
 names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
 pheno$Special.Status <- as.factor(pheno$Special.Status)
@@ -61,7 +61,7 @@ colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
 rownames(pheno) <- pheno[,1]
 pheno <- pheno[,c("Age","Sex","Special.Status")]
 
-betas <- read.csv("betas.csv")
+betas <- read.csv("betas_noob.csv")
 rownames(betas) <- betas[,1]
 betas[,1] <- NULL
 colnames(betas) <- gsub("^X", "", colnames(betas))
@@ -78,7 +78,7 @@ dmp <- champ.DMP(
 )
 dmp_short <- dmp$Control_to_Case[dmp$Control_to_Case$adj.P.Val<=0.05,]
 if (!all(is.na(dmp_short))) {
-  write.csv(dmp$Control_to_Case, file = "DMP_orgn_champ.csv")
+  write.csv(dmp_short, file = "DMP_orgn_champ.csv")
 }
 
 cpgs_fltr <- read.csv("cpgs_fltd.csv")
@@ -94,7 +94,7 @@ dmp_fltr <- champ.DMP(
 )
 dmp_short_fltr <- dmp_fltr$Control_to_Case[dmp_fltr$Control_to_Case$adj.P.Val<=0.05,]
 if (!all(is.na(dmp_short_fltr))) {
-  write.csv(dmp_fltr$Control_to_Case, file = "DMP_fltr_champ.csv")
+  write.csv(dmp_short_fltr, file = "DMP_fltr_champ.csv")
 }
 ####################################################################
 ### DMR function test
@@ -391,10 +391,10 @@ library(stringr)
 library(limma)
 library(DMRcate)
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63"
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/noob"
 setwd(path)
 
-pheno <- read_excel("pheno.xlsx")
+pheno <- read_excel("pheno_noob.xlsx")
 pheno <- as.data.frame(pheno)
 names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
 pheno$Special.Status <- as.factor(pheno$Special.Status)
@@ -402,7 +402,7 @@ colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
 rownames(pheno) <- pheno[,1]
 pheno <- pheno[,c("Age","Sex","Special.Status")]
 
-betas <- read.csv("betas.csv")
+betas <- read.csv("betas_noob.csv")
 rownames(betas) <- betas[,1]
 betas[,1] <- NULL
 colnames(betas) <- gsub("^X", "", colnames(betas))
@@ -524,10 +524,10 @@ library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
 library(readxl)
 library(stringr)
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63"
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/noob"
 setwd(path)
 
-pheno <- read_excel("pheno.xlsx")
+pheno <- read_excel("pheno_noob.xlsx")
 pheno <- as.data.frame(pheno)
 names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
 pheno$Special.Status <- as.factor(pheno$Special.Status)
@@ -535,7 +535,7 @@ colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
 rownames(pheno) <- pheno[,1]
 pheno <- pheno[,c("Age","Sex","Special.Status")]
 
-betas <- read.csv("betas.csv")
+betas <- read.csv("betas_noob.csv")
 rownames(betas) <- betas[,1]
 betas[,1] <- NULL
 colnames(betas) <- gsub("^X", "", colnames(betas))
@@ -580,10 +580,10 @@ library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
 library(readxl)
 library(stringr)
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63"
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/noob"
 setwd(path)
 
-pheno <- read_excel("pheno.xlsx")
+pheno <- read_excel("pheno_noob.xlsx")
 pheno <- as.data.frame(pheno)
 names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
 pheno$Special.Status <- as.factor(pheno$Special.Status)
@@ -593,7 +593,7 @@ rownames(pheno) <- as.character(rownames(pheno))
 pheno[,1] <- as.character(pheno[,1])
 pheno <- pheno[,c("ID", "Age","Sex","Special.Status")]
 
-betas <- read.csv("betas.csv")
+betas <- read.csv("betas_noob.csv")
 rownames(betas) <- betas[,1]
 colnames(betas) <- gsub("^X", "", colnames(betas))
 colnames(betas) <- as.character(colnames(betas))
@@ -659,10 +659,10 @@ library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
 library(readxl)
 library(stringr)
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63"
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/noob"
 setwd(path)
 
-pheno <- read_excel("pheno.xlsx")
+pheno <- read_excel("pheno_noob.xlsx")
 pheno <- as.data.frame(pheno)
 names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
 pheno$Special.Status <- as.factor(pheno$Special.Status)
@@ -670,7 +670,7 @@ colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
 rownames(pheno) <- pheno[,1]
 pheno <- pheno[,c("Age","Sex","Special.Status")]
 
-betas <- read.csv("betas.csv")
+betas <- read.csv("betas_noob.csv")
 rownames(betas) <- betas[,1]
 betas[,1] <- NULL
 colnames(betas) <- gsub("^X", "", colnames(betas))
