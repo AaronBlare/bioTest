@@ -50,10 +50,10 @@ gsea_pval <- 0.05
 methylglm_minsize <- 10
 methylglm_maxsize <- 1000
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/noob"
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/funnorm"
 setwd(path)
 
-pheno <- read_excel("pheno_noob.xlsx")
+pheno <- read_excel("pheno_funnorm.xlsx")
 pheno <- as.data.frame(pheno)
 names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
 pheno$Special.Status <- as.factor(pheno$Special.Status)
@@ -61,7 +61,7 @@ colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
 rownames(pheno) <- pheno[,1]
 pheno <- pheno[,c("Age","Sex","Special.Status")]
 
-betas <- read.csv("betas_noob.csv")
+betas <- read.csv("betas_funnorm.csv")
 rownames(betas) <- betas[,1]
 betas[,1] <- NULL
 colnames(betas) <- gsub("^X", "", colnames(betas))
@@ -289,10 +289,10 @@ library(stringr)
 library(limma)
 library(missMethyl)
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/noob"
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/funnorm"
 setwd(path)
 
-pheno <- read_excel("pheno_noob.xlsx")
+pheno <- read_excel("pheno_funnorm.xlsx")
 pheno <- as.data.frame(pheno)
 names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
 pheno$Special.Status <- as.factor(pheno$Special.Status)
@@ -300,7 +300,7 @@ colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
 rownames(pheno) <- pheno[,1]
 pheno <- pheno[,c("Age","Sex","Special.Status")]
 
-betas <- read.csv("betas_noob.csv")
+betas <- read.csv("betas_funnorm.csv")
 rownames(betas) <- betas[,1]
 betas[,1] <- NULL
 colnames(betas) <- gsub("^X", "", colnames(betas))
@@ -352,6 +352,37 @@ loi.lv[["CpG"]] <- unique(unlist(sapply(RSanno[cpg.idx, "UCSC_RefGene_Name"], fu
 write.csv(data.frame(loi.lv$CpG), file = "GSEA(ebayes)_group_wo_age_genes_orgn_limma.csv", row.names=FALSE)
 }
 
+fit.reduced.fltr <- lmFit(betas_fltr, design)
+fit.reduced.fltr  <- eBayes(fit.reduced.fltr , proportion=0.01, robust=TRUE)
+top.fltr <- topTable(fit.reduced.fltr , adjust="BH", sort.by="B", number=nrow(fit.reduced.fltr ))
+write.csv(top.fltr, file = "GSEA(ebayes)_group_fltr_limma.csv", row.names=TRUE)
+
+fit.contrast.fltr <- lmFit(betas_fltr, design_for_contrast)
+fit.reduced.contrast.fltr <- contrasts.fit(fit.contrast.fltr, design_contrast)
+fit.reduced.contrast.fltr <- eBayes(fit.reduced.contrast.fltr, proportion=0.01, robust=TRUE)
+top.contrast.fltr <- topTable(fit.reduced.contrast.fltr, adjust="BH", sort.by="B", number=nrow(fit.reduced.contrast.fltr))
+write.csv(top.contrast.fltr, file = "GSEA(ebayes)_group_wo_age_fltr_limma.csv", row.names=TRUE)
+
+top_short_fltr <- top.fltr[top.fltr$adj.P.Val<=0.05,]
+if (!all(is.na(top_short_fltr))) {
+RSobject <- RatioSet(betas_fltr, annotation = c(array = "IlluminaHumanMethylationEPICv2", annotation = "20a1.hg38"))
+RSanno <- getAnnotation(RSobject)[, c("chr", "pos", "Name", "UCSC_RefGene_Name")]
+loi.lv <- list()
+cpg.idx <- unique(unlist(row.names(top_short)))
+loi.lv[["CpG"]] <- unique(unlist(sapply(RSanno[cpg.idx, "UCSC_RefGene_Name"], function(x) strsplit(x, split = ";")[[1]])))
+write.csv(data.frame(loi.lv$CpG), file = "GSEA(ebayes)_group_genes_fltr_limma.csv", row.names=FALSE)
+}
+
+top_contrast_short_fltr <- top.contrast.fltr[top.contrast.fltr$adj.P.Val<=0.05,]
+if (!all(is.na(top_contrast_short_fltr))) {
+RSobject <- RatioSet(betas_fltr, annotation = c(array = "IlluminaHumanMethylationEPICv2", annotation = "20a1.hg38"))
+RSanno <- getAnnotation(RSobject)[, c("chr", "pos", "Name", "UCSC_RefGene_Name")]
+loi.lv <- list()
+cpg.idx <- unique(unlist(row.names(top_contrast_short)))
+loi.lv[["CpG"]] <- unique(unlist(sapply(RSanno[cpg.idx, "UCSC_RefGene_Name"], function(x) strsplit(x, split = ";")[[1]])))
+write.csv(data.frame(loi.lv$CpG), file = "GSEA(ebayes)_group_wo_age_genes_fltr_limma.csv", row.names=FALSE)
+}
+
 ### GSEA gometh
 cpgs_orgn <- read.csv("cpgs_orgn.csv")
 cpgs_orgn <- as.character(cpgs_orgn[,1])
@@ -391,10 +422,10 @@ library(stringr)
 library(limma)
 library(DMRcate)
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/noob"
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/funnorm"
 setwd(path)
 
-pheno <- read_excel("pheno_noob.xlsx")
+pheno <- read_excel("pheno_funnorm.xlsx")
 pheno <- as.data.frame(pheno)
 names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
 pheno$Special.Status <- as.factor(pheno$Special.Status)
@@ -402,10 +433,14 @@ colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
 rownames(pheno) <- pheno[,1]
 pheno <- pheno[,c("Age","Sex","Special.Status")]
 
-betas <- read.csv("betas_noob.csv")
+betas <- read.csv("betas_funnorm.csv")
 rownames(betas) <- betas[,1]
 betas[,1] <- NULL
 colnames(betas) <- gsub("^X", "", colnames(betas))
+
+cpgs_fltr <- read.csv("cpgs_fltd.csv")
+cpgs_fltr <- as.character(cpgs_fltr[,1])
+betas_fltr <- betas[row.names(betas) %in% cpgs_fltr,]
 
 group <- factor(pheno$Special.Status, levels=c("Control","Case"))
 age <- pheno$Age
@@ -425,12 +460,20 @@ annotation_diff <- cpg.annotate(
   contrasts=FALSE, cont.matrix=NULL, 
   fdr=0.05, coef=2)
 diff_DMRs <- dmrcate(annotation_diff, lambda=1000, C=2)
-if (diff_DMRs) {
-  results.ranges.diff <- extractRanges(diff_DMRs)
-  results.ranges.diff.sign <- results.ranges.diff[results.ranges.diff$HMFDR<=0.05,]
-  if (!all(is.na(results.ranges.diff.sign))) {
-    write.csv(results.ranges.diff.sign, file = "DMRcate_diff_group_orgn.csv", row.names=TRUE)
-  }
+results.ranges.diff <- extractRanges(diff_DMRs)
+results.ranges.diff.sign <- results.ranges.diff[results.ranges.diff$HMFDR<=0.05,]
+if (!all(is.na(results.ranges.diff.sign))) {
+  results.ranges.diff.sign.df <- as.data.table(results.ranges.diff.sign)
+  results.ranges.diff.sign.df2 = data.frame(lapply(results.ranges.diff.sign.df, as.character), stringsAsFactors=FALSE)
+  write.csv(results.ranges.diff.sign.df2, file = "DMRcate_diff_group_orgn.csv", row.names=TRUE)
+}
+if (!all(is.na(results.ranges.diff.sign.df2))) {
+RSobject <- RatioSet(betas, annotation = c(array = "IlluminaHumanMethylationEPICv2", annotation = "20a1.hg38"))
+RSanno <- getAnnotation(RSobject)[, c("chr", "pos", "Name", "UCSC_RefGene_Name")]
+loi.lv <- list()
+cpg.idx <- unique(unlist(row.names(results.ranges.diff.sign.df2)))
+loi.lv[["CpG"]] <- unique(unlist(sapply(RSanno[cpg.idx, "UCSC_RefGene_Name"], function(x) strsplit(x, split = ";")[[1]])))
+write.csv(data.frame(loi.lv$CpG), file = "DMRcate_group_genes_orgn.csv", row.names=FALSE)
 }
 
 annotation_contrast_diff <- cpg.annotate(
@@ -447,6 +490,48 @@ if (diff_contrast_DMRs) {
   results.ranges.diff.contrast.sign <- results.ranges.diff.contrast[results.ranges.diff.contrast$HMFDR<=0.05,]
   if (!all(is.na(results.ranges.diff.contrast.sign))) {
     write.csv(results.ranges.diff.contrast.sign, file = "DMRcate_diff_contrast_group_orgn.csv", row.names=TRUE)
+  }
+}
+
+annotation_diff_fltr <- cpg.annotate(
+  datatype="array", 
+  object=data.matrix(betas_fltr), what="Beta", 
+  arraytype="EPICv2", 
+  analysis.type="differential",
+  design=design, 
+  contrasts=FALSE, cont.matrix=NULL, 
+  fdr=0.05, coef=2)
+diff_DMRs_fltr <- dmrcate(annotation_diff_fltr, lambda=1000, C=2)
+results.ranges.diff.fltr <- extractRanges(diff_DMRs_fltr)
+results.ranges.diff.sign.fltr <- results.ranges.diff.fltr[results.ranges.diff.fltr$HMFDR<=0.05,]
+if (!all(is.na(results.ranges.diff.sign.fltr))) {
+  results.ranges.diff.sign.df.fltr <- as.data.table(results.ranges.diff.sign.fltr)
+  results.ranges.diff.sign.df2.fltr = data.frame(lapply(results.ranges.diff.sign.df.fltr, as.character), stringsAsFactors=FALSE)
+  write.csv(results.ranges.diff.sign.df2.fltr, file = "DMRcate_diff_group_fltr.csv", row.names=TRUE)
+}
+if (!all(is.na(results.ranges.diff.sign.df2.fltr))) {
+RSobject <- RatioSet(betas, annotation = c(array = "IlluminaHumanMethylationEPICv2", annotation = "20a1.hg38"))
+RSanno <- getAnnotation(RSobject)[, c("chr", "pos", "Name", "UCSC_RefGene_Name")]
+loi.lv <- list()
+cpg.idx <- unique(unlist(row.names(results.ranges.diff.sign.df2.fltr)))
+loi.lv[["CpG"]] <- unique(unlist(sapply(RSanno[cpg.idx, "UCSC_RefGene_Name"], function(x) strsplit(x, split = ";")[[1]])))
+write.csv(data.frame(loi.lv$CpG), file = "DMRcate_group_genes_fltr.csv", row.names=FALSE)
+}
+
+annotation_contrast_diff_fltr <- cpg.annotate(
+  datatype="array", 
+  object=data.matrix(betas_fltr), what="Beta", 
+  arraytype="EPICv2", 
+  analysis.type="differential",
+  design=design_for_contrast, 
+  contrasts=TRUE, cont.matrix=design_contrast, 
+  fdr=0.05, coef=colnames(design_contrast)[1])
+diff_contrast_DMRs_fltr <- dmrcate(annotation_contrast_diff_fltr, lambda=1000, C=2)
+if (diff_contrast_DMRs_fltr) {
+  results.ranges.diff.contrast.fltr <- extractRanges(diff_contrast_DMRs_fltr)
+  results.ranges.diff.contrast.sign.fltr <- results.ranges.diff.contrast.fltr[results.ranges.diff.contrast.fltr$HMFDR<=0.05,]
+  if (!all(is.na(results.ranges.diff.contrast.sign.fltr))) {
+    write.csv(results.ranges.diff.contrast.sign.fltr, file = "DMRcate_diff_contrast_group_fltr.csv", row.names=TRUE)
   }
 }
 
@@ -524,10 +609,10 @@ library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
 library(readxl)
 library(stringr)
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/noob"
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/funnorm"
 setwd(path)
 
-pheno <- read_excel("pheno_noob.xlsx")
+pheno <- read_excel("pheno_funnorm.xlsx")
 pheno <- as.data.frame(pheno)
 names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
 pheno$Special.Status <- as.factor(pheno$Special.Status)
@@ -535,7 +620,7 @@ colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
 rownames(pheno) <- pheno[,1]
 pheno <- pheno[,c("Age","Sex","Special.Status")]
 
-betas <- read.csv("betas_noob.csv")
+betas <- read.csv("betas_funnorm.csv")
 rownames(betas) <- betas[,1]
 betas[,1] <- NULL
 colnames(betas) <- gsub("^X", "", colnames(betas))
@@ -550,7 +635,7 @@ set.seed(1337)
 ewas.ret <- meffil.ewas(beta.nodup, variable=pheno$Special.Status, covariates=NULL, isva=F) 
 
 ewas.parameters <- meffil.ewas.parameters(sig.threshold=0.05,  ## EWAS p-value threshold
-                                          max.plots=100, ## plot at most 100 CpG sites
+                                          max.plots=10, ## plot at most 10 CpG sites
                                           qq.inflation.method="median",  ## measure inflation using median
                                           model="sva") ## select default EWAS model; 
 
@@ -562,7 +647,7 @@ set.seed(1337)
 ewas.ret.cont <- meffil.ewas(beta.nodup, variable=group, covariates=age, isva=F) 
 
 ewas.parameters <- meffil.ewas.parameters(sig.threshold=0.05,  ## EWAS p-value threshold
-                                          max.plots=100, ## plot at most 100 CpG sites
+                                          max.plots=10, ## plot at most 10 CpG sites
                                           qq.inflation.method="median",  ## measure inflation using median
                                           model="sva") ## select default EWAS model; 
 
@@ -580,10 +665,10 @@ library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
 library(readxl)
 library(stringr)
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/noob"
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/funnorm"
 setwd(path)
 
-pheno <- read_excel("pheno_noob.xlsx")
+pheno <- read_excel("pheno_funnorm.xlsx")
 pheno <- as.data.frame(pheno)
 names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
 pheno$Special.Status <- as.factor(pheno$Special.Status)
@@ -593,7 +678,7 @@ rownames(pheno) <- as.character(rownames(pheno))
 pheno[,1] <- as.character(pheno[,1])
 pheno <- pheno[,c("ID", "Age","Sex","Special.Status")]
 
-betas <- read.csv("betas_noob.csv")
+betas <- read.csv("betas_funnorm.csv")
 rownames(betas) <- betas[,1]
 colnames(betas) <- gsub("^X", "", colnames(betas))
 colnames(betas) <- as.character(colnames(betas))
@@ -659,10 +744,10 @@ library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
 library(readxl)
 library(stringr)
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/noob"
+path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/funnorm"
 setwd(path)
 
-pheno <- read_excel("pheno_noob.xlsx")
+pheno <- read_excel("pheno_funnorm.xlsx")
 pheno <- as.data.frame(pheno)
 names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
 pheno$Special.Status <- as.factor(pheno$Special.Status)
@@ -670,12 +755,14 @@ colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
 rownames(pheno) <- pheno[,1]
 pheno <- pheno[,c("Age","Sex","Special.Status")]
 
-betas <- read.csv("betas_noob.csv")
+betas <- read.csv("betas_funnorm.csv")
 rownames(betas) <- betas[,1]
 betas[,1] <- NULL
 colnames(betas) <- gsub("^X", "", colnames(betas))
 
 dmp <- dmpFinder(data.matrix(betas), pheno=pheno$Special.Status, type="continuous")
+write.csv(data.frame(dmp), file = "DMP_group_orgn_minfi.csv", row.names=TRUE)
+
 dmp_short <- dmp[dmp$qval<=0.05,]
 if (!all(is.na(dmp_short))) {
 RSobject <- RatioSet(betas, annotation = c(array = "IlluminaHumanMethylationEPICv2", annotation = "20a1.hg38"))
