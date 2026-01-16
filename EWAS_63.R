@@ -50,7 +50,7 @@ gsea_pval <- 0.05
 methylglm_minsize <- 10
 methylglm_maxsize <- 1000
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/funnorm"
+path <- "D:/Yandex.Disk/DNAm draft/Lesnoy_CVD/120_1"
 setwd(path)
 
 pheno <- read_excel("pheno_funnorm.xlsx")
@@ -289,7 +289,7 @@ library(stringr)
 library(limma)
 library(missMethyl)
 
-path <- "E:/YandexDisk/bbd/fmba/dnam/processed/special_63/funnorm"
+path <- "D:/Yandex.Disk/DNAm draft/Lesnoy_CVD/120_1"
 setwd(path)
 
 pheno <- read_excel("pheno_funnorm.xlsx")
