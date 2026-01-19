@@ -51,6 +51,18 @@ gsea <- champ.GSEA(beta=betas,
  cores=8)
 capture.output(print(PathwayList), file = "GSEA(gometh)_cpg_orgn_champ.txt")
 
+gsea <- champ.GSEA(beta=betas,
+ DMP=NULL,
+ DMR=NULL,
+ CpGlist=NULL,
+ Genelist=genes$loi.lv.CpG,
+ pheno=pheno$Special.Status,
+ method="gometh",
+ arraytype="EPICv2",
+ Rplot=TRUE,
+ adjPval=0.05,
+ cores=8)
+
 ####################################################################
 ### methylglm function test
 ####################################################################
@@ -200,3 +212,71 @@ enrich_res_pc <- enrichPC(genes$loi.lv.CpG)
 
 gene_entrez <- bitr(genes$loi.lv.CpG, fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
 enrich_res_wp <- enrichWP(gene_entrez$ENTREZID, "Homo sapiens")
+
+####################################################################
+### dmGSEA test
+####################################################################
+
+library(dmGsea)
+library(data.table)
+
+colnames(cpgs)[colnames(cpgs) == 'X'] <- 'Name'
+colnames(cpgs)[colnames(cpgs) == 'P.Value'] <- 'p'
+cpgs <- cpgs[,c("Name","p")]
+
+all_symbols <- unique(unlist(strsplit(na.omit(manifest$UCSC_RefGene_Name), ";")))
+all_symbols <- unique(trimws(all_symbols))
+symbol_to_entrez <- mapIds(org.Hs.eg.db,
+                          keys = all_symbols,
+                          column = "ENTREZID",
+                          keytype = "SYMBOL",
+                          multiVals = "first")
+
+convert_symbols_fast <- function(symbol_string) {
+  if (is.na(symbol_string) || symbol_string == "") return("")
+  
+  symbols <- trimws(unlist(strsplit(symbol_string, ";")))
+  entrez_ids <- na.omit(unique(symbol_to_entrez[symbols]))
+  
+  if (length(entrez_ids) == 0) return(NA)
+  paste(entrez_ids, collapse = ";")
+}
+
+if (is.data.table(manifest)) {
+  manifest[, entrezid := sapply(UCSC_RefGene_Name, convert_symbols_fast)]
+} else {
+  manifest$entrezid <- sapply(manifest$UCSC_RefGene_Name, convert_symbols_fast)
+}
+
+colnames(manifest)[colnames(manifest) == 'IlmnID'] <- 'Name'
+manifest_entrez <- manifest[,c("Name","entrezid")]
+
+gsProbe(
+  cpgs,
+  FDRthre=0.05,
+  GeneProbeTable=manifest_entrez,
+  arrayType=NULL,
+  gSetName='GO',
+  species="Human",
+  outfile="gsProbe_go",
+  ncore=1)
+
+gsProbe(
+  cpgs,
+  FDRthre=0.05,
+  GeneProbeTable=manifest_entrez,
+  arrayType=NULL,
+  gSetName='KEGG',
+  species="Human",
+  outfile="gsProbe_kegg",
+  ncore=1)
+
+gsProbe(
+  cpgs,
+  FDRthre=0.05,
+  GeneProbeTable=manifest_entrez,
+  arrayType=NULL,
+  gSetName='MSigDB',
+  species="Human",
+  outfile="gsProbe_msig",
+  ncore=1)
