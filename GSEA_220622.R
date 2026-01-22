@@ -140,7 +140,7 @@ library(dmGsea)
 library(data.table)
 
 colnames(cpgs)[colnames(cpgs) == 'X'] <- 'Name'
-colnames(cpgs)[colnames(cpgs) == 'P.Value'] <- 'p'
+colnames(cpgs)[colnames(cpgs) == 'adj.P.Val'] <- 'p'
 cpgs <- cpgs[,c("Name","p")]
 
 gsProbe(
@@ -152,6 +152,25 @@ gsProbe(
   outfile="gsProbe_go",
   ncore=1)
 
+gsGene(
+  cpgs,
+  method="Threshold",
+  FDRthre=0.05,
+  arrayType='EPIC',
+  gSetName="GO",
+  species="Human",
+  outfile="gsGene_go",
+  ncore=1)
+
+gsGene(
+  cpgs,
+  method="Ranking",
+  arrayType='EPIC',
+  gSetName="GO",
+  species="Human",
+  outfile="gsGene_go_rank",
+  ncore=1)
+
 gsProbe(
   cpgs,
   FDRthre=0.05,
@@ -161,6 +180,25 @@ gsProbe(
   outfile="gsProbe_kegg",
   ncore=1)
 
+gsGene(
+  cpgs,
+  method="Threshold",
+  FDRthre=0.05,
+  arrayType='EPIC',
+  gSetName="KEGG",
+  species="Human",
+  outfile="gsGene_kegg",
+  ncore=1)
+
+gsGene(
+  cpgs,
+  method="Ranking",
+  arrayType='EPIC',
+  gSetName="KEGG",
+  species="Human",
+  outfile="gsGene_kegg_rank",
+  ncore=1)
+
 gsProbe(
   cpgs,
   FDRthre=0.05,
@@ -168,4 +206,23 @@ gsProbe(
   gSetName='MSigDB',
   species="Human",
   outfile="gsProbe_msig",
+  ncore=1)
+
+gsGene(
+  cpgs,
+  method="Threshold",
+  FDRthre=0.05,
+  arrayType='EPIC',
+  gSetName="MSigDB",
+  species="Human",
+  outfile="gsGene_msig",
+  ncore=1)
+
+gsGene(
+  cpgs,
+  method="Ranking",
+  arrayType='EPIC',
+  gSetName="MSigDB",
+  species="Human",
+  outfile="gsGene_msig_rank",
   ncore=1)

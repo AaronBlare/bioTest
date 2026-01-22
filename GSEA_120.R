@@ -219,9 +219,10 @@ enrich_res_wp <- enrichWP(gene_entrez$ENTREZID, "Homo sapiens")
 
 library(dmGsea)
 library(data.table)
+library(org.Hs.eg.db)
 
 colnames(cpgs)[colnames(cpgs) == 'X'] <- 'Name'
-colnames(cpgs)[colnames(cpgs) == 'P.Value'] <- 'p'
+colnames(cpgs)[colnames(cpgs) == 'adj.P.Val'] <- 'p'
 cpgs <- cpgs[,c("Name","p")]
 
 all_symbols <- unique(unlist(strsplit(na.omit(manifest$UCSC_RefGene_Name), ";")))
@@ -261,6 +262,25 @@ gsProbe(
   outfile="gsProbe_go",
   ncore=1)
 
+gsGene(
+  cpgs,
+  method="Threshold",
+  FDRthre=0.05,
+  GeneProbeTable=manifest_entrez,
+  gSetName="GO",
+  species="Human",
+  outfile="gsGene_go",
+  ncore=1)
+
+gsGene(
+  cpgs,
+  method="Ranking",
+  GeneProbeTable=manifest_entrez,
+  gSetName="GO",
+  species="Human",
+  outfile="gsGene_go_rank",
+  ncore=1)
+
 gsProbe(
   cpgs,
   FDRthre=0.05,
@@ -271,6 +291,25 @@ gsProbe(
   outfile="gsProbe_kegg",
   ncore=1)
 
+gsGene(
+  cpgs,
+  method="Threshold",
+  FDRthre=0.05,
+  GeneProbeTable=manifest_entrez,
+  gSetName="KEGG",
+  species="Human",
+  outfile="gsGene_kegg",
+  ncore=1)
+
+gsGene(
+  cpgs,
+  method="Ranking",
+  GeneProbeTable=manifest_entrez,
+  gSetName="KEGG",
+  species="Human",
+  outfile="gsGene_kegg_rank",
+  ncore=1)
+
 gsProbe(
   cpgs,
   FDRthre=0.05,
@@ -279,4 +318,23 @@ gsProbe(
   gSetName='MSigDB',
   species="Human",
   outfile="gsProbe_msig",
+  ncore=1)
+
+gsGene(
+  cpgs,
+  method="Threshold",
+  FDRthre=0.05,
+  GeneProbeTable=manifest_entrez,
+  gSetName="MSigDB",
+  species="Human",
+  outfile="gsGene_msig",
+  ncore=1)
+
+gsGene(
+  cpgs,
+  method="Ranking",
+  GeneProbeTable=manifest_entrez,
+  gSetName="MSigDB",
+  species="Human",
+  outfile="gsGene_msig_rank",
   ncore=1)
