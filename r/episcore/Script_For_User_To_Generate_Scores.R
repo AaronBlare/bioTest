@@ -219,7 +219,7 @@ NULL
   message("5. Covariates")
 }
 
-write.csv(out, "episcores_Les_120.csv", row.names = F)
+write.csv(out, "episcores_Les_56_vs_56.csv", row.names = F)
 
 ## Save File and Finish Up 
 message("Analysis Finished! Thank you for using our application. Output File is called \"out\"") 

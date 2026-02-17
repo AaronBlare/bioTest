@@ -78,10 +78,10 @@ GSEA_methylglm_go <- methylglm(
   GS.idtype = "SYMBOL",
   GS.type = "GO",
   minsize = 5,
-  maxsize = 500,
+  maxsize = 10000,
   parallel = FALSE
 )
-write.csv(GSEA_methylglm_go, file = "GSEA(methylglm)_GO_orgn_5_500.csv", row.names=FALSE)
+write.csv(GSEA_methylglm_go, file = "GSEA(methylglm)_GO_orgn_5_10000.csv", row.names=FALSE)
 
 GSEA_methylglm_kegg <- methylglm(
   cpg.pval = cpg_pval,
@@ -91,10 +91,10 @@ GSEA_methylglm_kegg <- methylglm(
   GS.idtype = "SYMBOL",
   GS.type = "KEGG",
   minsize = 5,
-  maxsize = 500,
+  maxsize = 10000,
   parallel = FALSE
 )
-write.csv(GSEA_methylglm_kegg, file = "GSEA(methylglm)_KEGG_orgn_5_500.csv", row.names=FALSE)
+write.csv(GSEA_methylglm_kegg, file = "GSEA(methylglm)_KEGG_orgn_5_10000.csv", row.names=FALSE)
 
 GSEA_methylglm_react <- methylglm(
   cpg.pval = cpg_pval,
@@ -104,10 +104,10 @@ GSEA_methylglm_react <- methylglm(
   GS.idtype = "SYMBOL",
   GS.type = "Reactome",
   minsize = 5,
-  maxsize = 500,
+  maxsize = 10000,
   parallel = FALSE
 )
-write.csv(GSEA_methylglm_react, file = "GSEA(methylglm)_Reactome_orgn_5_500.csv", row.names=FALSE)
+write.csv(GSEA_methylglm_react, file = "GSEA(methylglm)_Reactome_orgn_5_10000.csv", row.names=FALSE)
 
 GSEA_methylrra_go <- methylRRA(
     cpg.pval = cpg_pval,
