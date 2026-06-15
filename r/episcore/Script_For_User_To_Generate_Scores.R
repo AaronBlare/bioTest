@@ -1,12 +1,12 @@
 rm(list = ls())
 
-## FOR THE USER - PLACE INPUT FILES HERE - CAN CHANGE readRDS or read.csv if you so wish 
+## FOR THE USER - PLACE INPUT FILES HERE - CAN CHANGE readRDS or read.csv if you so wish
 
 setwd("C:/Git/bioTest/r/episcore")
 
 ## Start to Process Files 
-data=read.csv("data_Les_120.csv", row.names='cpg')
-sexageinfo=read.csv("age_sex_Les_120.csv")
+data=readRDS("EPICv1_sesame_masked_beta_matrix.Rds")
+sexageinfo=read.csv("main_sample_sheet.csv")
 sexageinfo$ID = paste0('X', sexageinfo$ID)
 
 message("1. Loading data") 
@@ -194,8 +194,8 @@ if(!exists("sexageinfo")){
 } else { 
   ids = out$ID
   sexageinfo = sexageinfo[match(ids, sexageinfo$ID),] 
-  out$'True Age' <- sexageinfo$Age
-  out$Sex <- sexageinfo$Sex
+  out$'True Age' <- sexageinfo$age
+  out$Sex <- sexageinfo$sex
   message("4. Sex and Age Info Added")
 }
 
@@ -219,7 +219,7 @@ NULL
   message("5. Covariates")
 }
 
-write.csv(out, "episcores_Les_56_vs_56.csv", row.names = F)
+write.csv(out, "episcores_Les_120_check.csv", row.names = F)
 
 ## Save File and Finish Up 
 message("Analysis Finished! Thank you for using our application. Output File is called \"out\"") 

@@ -410,6 +410,94 @@ for(i in 1:4){
 }
 
 ####################################################################
+### limma testing for multiple covariates
+####################################################################
+rm(list=ls())
+
+library("ChAMP")
+library("methylGSA")
+library(IlluminaHumanMethylationEPICv2anno.20a1.hg38)
+library(readxl)
+library(stringr)
+library(limma)
+library(missMethyl)
+
+path <- "D:/Yandex.Disk/DNAm draft/Lesnoy_CVD/revision"
+setwd(path)
+
+pheno <- read_excel("data.xlsx")
+pheno <- as.data.frame(pheno)
+names(pheno) <- str_replace_all(names(pheno), c(" " = ".", "," = ""))
+pheno$Special.Status <- as.factor(pheno$Special.Status)
+colnames(pheno)[colnames(pheno) == '...1'] <- 'ID'
+colnames(pheno)[colnames(pheno) == 'Glucose.mmol/L'] <- 'Glucose'
+colnames(pheno)[colnames(pheno) == 'Total.cholesterol.mmol/L'] <- 'Total.cholesterol'
+colnames(pheno)[colnames(pheno) == 'Albumin.mg/L'] <- 'Albumin'
+colnames(pheno)[colnames(pheno) == 'Creatinine.μmol/L'] <- 'Creatinine'
+colnames(pheno)[colnames(pheno) == 'Alkaline.Phosphatase.U/L'] <- 'Alkaline.phosphatase'
+colnames(pheno)[colnames(pheno) == 'C-reactive.protein.mg/L'] <- 'C.reactive.protein'
+rownames(pheno) <- pheno[,1]
+pheno <- pheno[,c("Age","Sex","Special.Status","Glucose","Total.cholesterol","Albumin","Creatinine","Alkaline.phosphatase","C.reactive.protein")]
+
+betas <- read.csv("betas_funnorm.csv")
+rownames(betas) <- betas[,1]
+betas[,1] <- NULL
+colnames(betas) <- gsub("^X", "", colnames(betas))
+
+betas <- betas[grepl("^cg", rownames(betas)),]
+
+group <- factor(pheno$Special.Status, levels=c("Control","Case"))
+age <- pheno$Age
+glucose <- pheno$Glucose
+total_cholesterol <- pheno$Total.cholesterol
+albumin <- pheno$Albumin
+creatinine <- pheno$Creatinine
+alkaline_phosphatase <- pheno$Alkaline.phosphatase
+c_reactive_protein <- pheno$C.reactive.protein
+
+design_for_contrast_age <- model.matrix(~group+age)
+row.names(design_for_contrast_age) <- row.names(pheno)
+design_contrast_age <- makeContrasts(GroupWoAll=groupCase-age, levels=design_for_contrast_age)
+
+fit.contrast_age <- lmFit(betas, design_for_contrast_age)
+fit.reduced.contrast_age <- contrasts.fit(fit.contrast_age, design_contrast_age)
+fit.reduced.contrast_age <- eBayes(fit.reduced.contrast_age, proportion=0.01, robust=TRUE)
+top.contrast_age <- topTable(fit.reduced.contrast_age, adjust="BH", sort.by="B", number=nrow(fit.reduced.contrast_age))
+write.csv(top.contrast_age, file = "GSEA(ebayes)_group_wo_age_orgn_limma.csv", row.names=TRUE)
+
+top_contrast_short_age <- top.contrast_age[top.contrast_age$adj.P.Val<=0.05,]
+if (!all(is.na(top_contrast_short_age))) {
+RSobject <- RatioSet(betas, annotation = c(array = "IlluminaHumanMethylationEPICv2", annotation = "20a1.hg38"))
+RSanno <- getAnnotation(RSobject)[, c("chr", "pos", "Name", "UCSC_RefGene_Name")]
+loi.lv <- list()
+cpg.idx <- unique(unlist(row.names(top_contrast_short_age)))
+loi.lv[["CpG"]] <- unique(unlist(sapply(RSanno[cpg.idx, "UCSC_RefGene_Name"], function(x) strsplit(x, split = ";")[[1]])))
+write.csv(data.frame(loi.lv$CpG), file = "GSEA(ebayes)_group_wo_age_genes_orgn_limma.csv", row.names=FALSE)
+}
+
+
+design_for_contrast <- model.matrix(~group+age+glucose+total_cholesterol+albumin+creatinine+alkaline_phosphatase+c_reactive_protein)
+row.names(design_for_contrast) <- row.names(pheno)
+design_contrast <- makeContrasts(GroupWoAll=groupCase-age-glucose-total_cholesterol-albumin-creatinine-alkaline_phosphatase-c_reactive_protein, levels=design_for_contrast)
+
+fit.contrast <- lmFit(betas, design_for_contrast)
+fit.reduced.contrast <- contrasts.fit(fit.contrast, design_contrast)
+fit.reduced.contrast <- eBayes(fit.reduced.contrast, proportion=0.01, robust=TRUE)
+top.contrast <- topTable(fit.reduced.contrast, adjust="BH", sort.by="B", number=nrow(fit.reduced.contrast))
+write.csv(top.contrast, file = "GSEA(ebayes)_group_wo_all_orgn_limma.csv", row.names=TRUE)
+
+top_contrast_short <- top.contrast[top.contrast$adj.P.Val<=0.05,]
+if (!all(is.na(top_contrast_short))) {
+RSobject <- RatioSet(betas, annotation = c(array = "IlluminaHumanMethylationEPICv2", annotation = "20a1.hg38"))
+RSanno <- getAnnotation(RSobject)[, c("chr", "pos", "Name", "UCSC_RefGene_Name")]
+loi.lv <- list()
+cpg.idx <- unique(unlist(row.names(top_contrast_short)))
+loi.lv[["CpG"]] <- unique(unlist(sapply(RSanno[cpg.idx, "UCSC_RefGene_Name"], function(x) strsplit(x, split = ";")[[1]])))
+write.csv(data.frame(loi.lv$CpG), file = "GSEA(ebayes)_group_wo_all_genes_orgn_limma.csv", row.names=FALSE)
+}
+
+
+####################################################################
 ### GSEA testing for regions (DMRcate)
 ####################################################################
 rm(list=ls())

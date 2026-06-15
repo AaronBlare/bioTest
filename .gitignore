@@ -136,3 +136,5 @@ data/
 *.rds
 
 attack/
+r/plots/
+test_dnam_data/
