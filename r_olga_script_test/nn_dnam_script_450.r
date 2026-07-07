@@ -8,7 +8,7 @@ library(ggplot2)
 
 sesameDataCache()
 
-sample_sheet_path <- "D:/Yandex.Disk/DNAm draft/Lesnoy_CVD/120/raw/samples_60_control.csv"
+sample_sheet_path <- "D:/Yandex.Disk/DNAm draft/87571/controls.csv"
 idat_dir <- dirname(sample_sheet_path)
 
 ss <- fread(sample_sheet_path)
@@ -138,14 +138,7 @@ print(head(ss_pref))
 
 rm(idat_files, idat_dt, idat_dt_unique, idat_channels, bad_prefixes)
 
-mft <- sesameAnno_buildManifestGRanges(
-        sesameAnno_download("EPICv2.hg38.manifest.tsv.gz"),
-        columns = "nextBase"
-    )
-extR <- names(mft)[!is.na(mft$nextBase) & mft$nextBase == "R"]
-extA <- names(mft)[!is.na(mft$nextBase) & mft$nextBase == "A"]
-
-process_one_sample <- function(id_prefix, sample_id, idat_dir, verbose = TRUE) {
+process_one_sample <- function(id_prefix, sample_id, idat_dir, platform = "HM450", verbose = TRUE) {
   start_time <- Sys.time()
   idat_path <- file.path(idat_dir, id_prefix)
 
@@ -171,7 +164,8 @@ process_one_sample <- function(id_prefix, sample_id, idat_dir, verbose = TRUE) {
     qc_obj <- openSesame(
       idat_path,
       prep = "",
-      func = sesameQC_calcStats
+      func = sesameQC_calcStats,
+      platform = platform
     )
 
     get_stat <- function(name) {
@@ -190,7 +184,7 @@ process_one_sample <- function(id_prefix, sample_id, idat_dir, verbose = TRUE) {
     RGdistort <- get_stat("RGdistort")
 
     bs_gct_score <- tryCatch({
-      out <- as.numeric(bisConversionControl(sdf_raw, extR = extR, extA = extA))
+      out <- as.numeric(bisConversionControl(sdf_raw))
       if (length(out) == 0 || is.na(out)) NA_real_ else out
     }, error = function(e) NA_real_)
 
@@ -203,11 +197,11 @@ process_one_sample <- function(id_prefix, sample_id, idat_dir, verbose = TRUE) {
                       format(Sys.time(), "%Y-%m-%d %H:%M:%S"), sample_id))
     }
 
-    betas_unmasked <- openSesame(idat_path, prep = "CDB")
+    betas_unmasked <- openSesame(idat_path, prep = "CDB", platform = platform)
     betas_masked <- betas_unmasked
 
     sex_call <- tryCatch({
-      out <- inferSex(betas_unmasked)
+      out <- inferSex(betas_unmasked, platform = platform)
       if (length(out) == 0 || is.null(out)) NA_character_ else as.character(out)
     }, error = function(e) NA_character_)
 
@@ -450,7 +444,7 @@ setcolorder(ss_qc_full, c(
   "status", "error_message", "start_time", "end_time", "elapsed_sec"
 ))
 
-fwrite(ss_qc_full, "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_QC_table.csv")
+fwrite(ss_qc_full, "C:/Git/bioTest/r_olga_script_test/HM450_sesame_QC_table.csv")
 
 message("QC fail table:")
 print(table(ss_qc_full$qc_fail, useNA = "ifany"))
@@ -489,7 +483,7 @@ qc_overall[, `:=`(
   perc_fail_bs = round(100 * n_fail_bs / n_total, 1)
 )]
 
-fwrite(qc_overall, "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_QC_overall_summary.csv")
+fwrite(qc_overall, "C:/Git/bioTest/r_olga_script_test/HM450_sesame_QC_overall_summary.csv")
 
 message("Overall QC summary:")
 print(qc_overall)
@@ -521,7 +515,7 @@ message("Background outliers (both channels > 95th pct): ",
         sum(ss_qc_full$oob_outlier_strict, na.rm = TRUE))
 
 # If you want these in the saved QC CSV, re‑write it:
-fwrite(ss_qc_full, "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_QC_table.csv")
+fwrite(ss_qc_full, "C:/Git/bioTest/r_olga_script_test/HM450_sesame_QC_table.csv")
 
 library(ggplot2)
 library(data.table)
@@ -807,10 +801,10 @@ if (length(beta_list_ok) < 2) {
     rownames(snp_beta_mat) <- rs_probes
     colnames(snp_beta_mat) <- names(beta_list_ok)
 
-    saveRDS(snp_beta_mat, file = "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_SNP_beta_matrix.rds")
+    saveRDS(snp_beta_mat, file = "C:/Git/bioTest/r_olga_script_test/HM450_sesame_SNP_beta_matrix.rds")
     fwrite(
       data.table(Probe_ID = rownames(snp_beta_mat), snp_beta_mat),
-      "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_SNP_beta_matrix.csv"
+      "C:/Git/bioTest/r_olga_script_test/HM450_sesame_SNP_beta_matrix.csv"
     )
 
     snp_qc_dt <- data.table(
@@ -818,7 +812,7 @@ if (length(beta_list_ok) < 2) {
       n_snp_probes = colSums(!is.na(snp_beta_mat))
     )
 
-    fwrite(snp_qc_dt, "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_SNPcheck_table.csv")
+    fwrite(snp_qc_dt, "C:/Git/bioTest/r_olga_script_test/HM450_sesame_SNPcheck_table.csv")
   }
 }
 
@@ -938,7 +932,7 @@ p_heat <- ggplot(
     oob = scales::squish
   ) +
   labs(
-    title = "Sample–sample correlation based on EPIC SNP probes",
+    title = "Sample–sample correlation based on HM450 SNP probes",
     x = "Sample",
     y = "Sample",
     fill = "r (SNP betas)"
@@ -953,7 +947,7 @@ p_heat <- ggplot(
 pdf(file.path(plots_dir, "SNP_sample_dendrogram.pdf"), width = 7, height = 5)
 plot(
   as.dendrogram(hc),
-  main = "Hierarchical clustering of samples based on EPIC SNP probes",
+  main = "Hierarchical clustering of samples based on HM450 SNP probes",
   ylab = "1 - Pearson correlation"
 )
 dev.off()
@@ -1032,9 +1026,9 @@ if (sum(related_dt$high_related, na.rm = TRUE) > 0) {
 
 # 5. Save full relatedness table (optional but recommended)
 fwrite(related_dt,
-       file = "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_SNP_relatedness_table.csv")
+       file = "C:/Git/bioTest/r_olga_script_test/HM450_sesame_SNP_relatedness_table.csv")
 
-cat("\nSNP-based relatedness table written to EPICv2_sesame_SNP_relatedness_table.csv\n")
+cat("\nSNP-based relatedness table written to HM450_sesame_SNP_relatedness_table.csv\n")
 
 library(data.table)
 
@@ -1082,17 +1076,59 @@ rownames(beta_mat_masked) <- common_probes
 colnames(beta_mat_masked) <- names(beta_list_final)
 
 ## 4. Save RDS and CSV
-saveRDS(beta_mat_masked, file = "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_masked_beta_matrix.rds")
+saveRDS(beta_mat_masked, file = "C:/Git/bioTest/r_olga_script_test/HM450_sesame_masked_beta_matrix.rds")
 
 fwrite(
   data.table(Probe_ID = rownames(beta_mat_masked), beta_mat_masked),
-  "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_masked_beta_matrix.csv"
+  "C:/Git/bioTest/r_olga_script_test/HM450_sesame_masked_beta_matrix.csv"
 )
+
+## ------------ save all samples ------------
+keep_ids_final_all <- ss_qc_full[, Sample_ID]
+keep_ids_final_all <- intersect(as.character(keep_ids_final_all), names(results_list))
+
+message("Number of all samples for final matrix: ", length(keep_ids_final_all))
+
+## 1. Collect betas_masked for each final sample, dropping any that are missing/empty
+beta_list_final_all <- lapply(keep_ids_final_all, function(sid) {
+  x <- results_list[[sid]]
+  if (is.null(x) || is.null(x$betas_masked)) return(NULL)
+  b <- x$betas_masked
+  if (length(b) == 0 || is.null(names(b))) return(NULL)
+  b
+})
+names(beta_list_final_all) <- keep_ids_final_all
+beta_list_final_all <- beta_list_final_all[!vapply(beta_list_final_all, is.null, logical(1))]
+
+message("Samples with non-null betas_masked in final set: ", length(beta_list_final_all))
+
+## 2. Intersect probes across the remaining samples
+common_probes <- Reduce(intersect, lapply(beta_list_final_all, names))
+
+message("Number of common probes across final samples: ", length(common_probes))
+
+if (length(common_probes) == 0) {
+  stop("No common probes across final samples; cannot build final matrix.")
+}
+
+## 3. Build the masked beta matrix
+beta_mat_masked_all <- sapply(names(beta_list_final_all), function(sid) {
+  as.numeric(beta_list_final_all[[sid]][common_probes])
+})
+
+rownames(beta_mat_masked_all) <- common_probes
+colnames(beta_mat_masked_all) <- names(beta_list_final_all)
+
+fwrite(
+  data.table(Probe_ID = rownames(beta_mat_masked_all), beta_mat_masked_all),
+  "C:/Git/bioTest/r_olga_script_test/HM450_sesame_masked_beta_matrix_all.csv"
+)
+## ------------------------
 
 message(
   "Final masked beta matrix written: ",
   nrow(beta_mat_masked), " probes × ", ncol(beta_mat_masked), " samples.\n",
-  "Files: EPICv2_sesame_masked_beta_matrix.rds and .csv"
+  "Files: HM450_sesame_masked_beta_matrix.rds and .csv"
 )
 
 library(data.table)
@@ -1102,11 +1138,11 @@ if (!dir.exists(bad_probe_dir)) dir.create(bad_probe_dir)
 
 library(data.table)
 
-mask_tsv_url <- "https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPICv2/EPICv2.hg38.mask.tsv.gz"
-local_tsv_gz <- "EPICv2.hg38.mask.tsv.gz"
+mask_tsv_url <- "https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/HM450/archive/202209/HM450.hg38.mask.tsv.gz"
+local_tsv_gz <- "HM450.hg38.mask.tsv.gz"
 
 if (!file.exists(local_tsv_gz)) {
-  message("Скачиваем маску EPICv2...")
+  message("Скачиваем маску HM450...")
   tryCatch(
     download.file(mask_tsv_url, destfile = local_tsv_gz, mode = "wb", method = "auto", quiet = FALSE),
     error = function(e) {
@@ -1122,37 +1158,45 @@ mask_dt <- fread(local_tsv_gz, sep = "\t", header = TRUE, stringsAsFactors = FAL
 
 print(colnames(mask_dt))
 
-if (is.logical(mask_dt$M_general)) {
-  bad_ids <- mask_dt$Probe_ID[mask_dt$M_general == TRUE]
-} else if (is.numeric(mask_dt$M_general)) {
-  bad_ids <- mask_dt$Probe_ID[mask_dt$M_general == 1]
-} else {
-  bad_ids <- mask_dt$Probe_ID[as.logical(mask_dt$M_general)]
-}
+mapping_ids <- mask_dt$probeID[mask_dt$MASK_mapping == TRUE]
+rmsk15_ids <- mask_dt$probeID[mask_dt$MASK_rmsk15 == TRUE]
+snp5_common_ids <- mask_dt$probeID[mask_dt$MASK_snp5_common == TRUE]
+snp5_GMAF1p_ids <- mask_dt$probeID[mask_dt$MASK_snp5_GMAF1p == TRUE]
 
-bad_probe_dt <- data.table(
-  Probe_ID = bad_ids,
-  bad_probe_reason = "masked_general"
-)
+bad_probe_dt <- unique(rbindlist(list(
+  data.table(Probe_ID = mapping_ids,     bad_probe_reason = "mapping"),
+  data.table(Probe_ID = rmsk15_ids,     bad_probe_reason = "rmsk15"),
+  data.table(Probe_ID = snp5_common_ids, bad_probe_reason = "snp5_common"),
+  data.table(Probe_ID = snp5_GMAF1p_ids, bad_probe_reason = "snp5_GMAF1p")
+), use.names = TRUE, fill = TRUE))
 
+bad_probe_dt <- bad_probe_dt[
+  , .(bad_probe_reason = paste(unique(bad_probe_reason), collapse = ",")),
+  by = Probe_ID
+]
+
+bad_probe_dt <- bad_probe_dt[!is.na(Probe_ID) & Probe_ID != ""]
 bad_probe_ids_dt <- unique(bad_probe_dt[, .(Probe_ID)])
 
-fwrite(bad_probe_dt, file.path(bad_probe_dir, "EPICv2_known_bad_probes_annotated.csv"))
-fwrite(bad_probe_ids_dt, file.path(bad_probe_dir, "EPICv2_known_bad_probes_ids.csv"))
+if (!exists("bad_probe_dir")) bad_probe_dir <- "probe_filters"
+dir.create(bad_probe_dir, showWarnings = FALSE, recursive = TRUE)
 
-cat("\nKnown bad EPIC probe list created.\n")
-cat("Annotated file: probe_filters/EPICv2_known_bad_probes_annotated.csv\n")
-cat("Simple ID file: probe_filters/EPICv2_known_bad_probes_ids.csv\n")
+fwrite(bad_probe_dt, file.path(bad_probe_dir, "HM450_known_bad_probes_annotated.csv"))
+fwrite(bad_probe_ids_dt, file.path(bad_probe_dir, "HM450_known_bad_probes_ids.csv"))
+
+cat("\nKnown bad HM450 probe list created.\n")
+cat("Annotated file: probe_filters/HM450_known_bad_probes_annotated.csv\n")
+cat("Simple ID file: probe_filters/HM450_known_bad_probes_ids.csv\n")
 cat("Number of unique known bad probes: ", nrow(bad_probe_ids_dt), "\n", sep = "")
 
 library(data.table)
 
 ## Load final matrix if not already in memory
 if (!exists("beta_mat_masked") || is.null(beta_mat_masked)) {
-  if (!file.exists("C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_masked_beta_matrix.rds")) {
-    stop("EPICv2_sesame_masked_beta_matrix.rds not found.")
+  if (!file.exists("C:/Git/bioTest/r_olga_script_test/HM450_sesame_masked_beta_matrix.rds")) {
+    stop("HM450_sesame_masked_beta_matrix.rds not found.")
   }
-  beta_mat_masked <- readRDS("C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_masked_beta_matrix.rds")
+  beta_mat_masked <- readRDS("C:/Git/bioTest/r_olga_script_test/HM450_sesame_masked_beta_matrix.rds")
 }
 
 if (is.null(rownames(beta_mat_masked))) {
@@ -1160,7 +1204,7 @@ if (is.null(rownames(beta_mat_masked))) {
 }
 
 ## Load known bad probes
-bad_probe_file <- file.path("C:/Git/bioTest/r_olga_script_test/probe_filters", "EPICv2_known_bad_probes_ids.csv")
+bad_probe_file <- file.path("C:/Git/bioTest/r_olga_script_test/probe_filters", "HM450_known_bad_probes_ids.csv")
 if (!file.exists(bad_probe_file)) {
   stop("Known bad probe ID file not found: ", bad_probe_file)
 }
@@ -1197,14 +1241,14 @@ keep_probe_ids <- probe_qc_dt[keep_probe == TRUE, Probe_ID]
 beta_mat_probe_filtered <- beta_mat_masked[keep_probe_ids, , drop = FALSE]
 
 ## 6. Save outputs
-saveRDS(beta_mat_probe_filtered, "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_masked_beta_matrix_probe_filtered.rds")
+saveRDS(beta_mat_probe_filtered, "C:/Git/bioTest/r_olga_script_test/HM450_sesame_masked_beta_matrix_probe_filtered.rds")
 
 fwrite(
   data.table(Probe_ID = rownames(beta_mat_probe_filtered), beta_mat_probe_filtered),
-  "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_masked_beta_matrix_probe_filtered.csv"
+  "C:/Git/bioTest/r_olga_script_test/HM450_sesame_masked_beta_matrix_probe_filtered.csv"
 )
 
-fwrite(probe_qc_dt, "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_probe_QC_table.csv")
+fwrite(probe_qc_dt, "C:/Git/bioTest/r_olga_script_test/HM450_sesame_probe_QC_table.csv")
 
 ## 7. Report
 cat("\n=== PROBE-LEVEL QC SUMMARY ===\n")
@@ -1214,9 +1258,9 @@ cat("Removed for >5% missingness:          ", sum(probe_qc_dt$fail_missing), "\n
 cat("Removed as known bad probes:          ", sum(probe_qc_dt$fail_known_bad), "\n")
 cat("Final probes retained:                ", nrow(beta_mat_probe_filtered), "\n")
 cat("Files written:\n")
-cat("  - EPICv2_sesame_masked_beta_matrix_probe_filtered.rds\n")
-cat("  - EPICv2_sesame_masked_beta_matrix_probe_filtered.csv\n")
-cat("  - EPICv2_sesame_probe_QC_table.csv\n")
+cat("  - HM450_sesame_masked_beta_matrix_probe_filtered.rds\n")
+cat("  - HM450_sesame_masked_beta_matrix_probe_filtered.csv\n")
+cat("  - HM450_sesame_probe_QC_table.csv\n")
 
 library(data.table)
 
@@ -1256,18 +1300,18 @@ if (!exists("probe_qc_dt") || !exists("beta_mat_masked") || !exists("beta_mat_pr
 
   fwrite(
     probe_QC_overview,
-    file = "C:/Git/bioTest/r_olga_script_test/EPICv2_sesame_probe_QC_overview.csv"
+    file = "C:/Git/bioTest/r_olga_script_test/HM450_sesame_probe_QC_overview.csv"
   )
 
-  cat("\n[probe_QC_overview] Summary written to EPICv2_sesame_probe_QC_overview.csv\n\n")
+  cat("\n[probe_QC_overview] Summary written to HM450_sesame_probe_QC_overview.csv\n\n")
 }
 
 library(data.table)
 setDT(ss_qc_full)
 
 cat("========== DNAm QC REPORT ==========\n\n")
-cat("Platform: Illumina MethylationEPIC v2.0; processing via SeSAMe;",
-    "known-bad EPIC probes removed using Pidsley et al. supplementary filters.\n\n")
+cat("Platform: HM450; processing via SeSAMe;",
+    "known-bad HM450 probes removed.\n\n")
 
 ## 1. SAMPLE COUNTS
 n_total <- nrow(ss_qc_full)
@@ -1351,7 +1395,7 @@ if (nrow(pass_dt) == 0) {
 }
 
 ## 4. SNP PROBE COVERAGE
-cat("4) SNP PROBE COVERAGE (59 EPIC SNP probes)\n")
+cat("4) SNP PROBE COVERAGE (HM450 SNP probes)\n")
 if (exists("snp_qc_dt")) {
   setDT(snp_qc_dt)
   snp_min  <- min(snp_qc_dt$n_snp_probes, na.rm = TRUE)
@@ -1456,9 +1500,9 @@ if (exists("related_dt")) {
   cat("   Relatedness table (related_dt) not found; run chunk 9c to compute it.\n\n")
 }
 
-## 8) PROBE-LEVEL FILTERING SUMMARY (EPIC array)
+## 8) PROBE-LEVEL FILTERING SUMMARY (HM450 array)
 
-cat("8) PROBE-LEVEL FILTERING SUMMARY (EPIC array)\n")
+cat("8) PROBE-LEVEL FILTERING SUMMARY (HM450 array)\n")
 
 if (!exists("probe_qc_dt") || !exists("beta_mat_probe_filtered")) {
   cat("   Probe-level QC objects not found in memory.\n")
@@ -1471,7 +1515,7 @@ if (!exists("probe_qc_dt") || !exists("beta_mat_probe_filtered")) {
   n_final      <- nrow(beta_mat_probe_filtered)
 
   cat("   Input probes (all types):                ", n_input,
-      "  [rows in EPICv2_sesame_masked_beta_matrix]\n", sep = "")
+      "  [rows in HM450_sesame_masked_beta_matrix]\n", sep = "")
   cat("   CpG probes considered:                   ", n_cpg,
       "  [probes with IDs starting 'cg']\n", sep = "")
   cat("   Removed for >5% missingness:             ", n_missing,
@@ -1479,11 +1523,11 @@ if (!exists("probe_qc_dt") || !exists("beta_mat_probe_filtered")) {
   cat("   Removed as known bad probes:             ", n_known_bad,
       "  [cross-reactive / SNP-affected / off-target]\n", sep = "")
   cat("   Final probes retained after filtering:   ", n_final,
-      "  [used in EPICv2_sesame_masked_beta_matrix_probe_filtered]\n\n", sep = "")
+      "  [used in HM450_sesame_masked_beta_matrix_probe_filtered]\n\n", sep = "")
 }
 
 cat("Full probe-level QC metrics are provided in: ",
-    "EPICv2_sesame_probe_QC_table.csv\n\n")
+    "HM450_sesame_probe_QC_table.csv\n\n")
 
 cat("========== END OF DNAm QC REPORT ==========\n\n")
 
